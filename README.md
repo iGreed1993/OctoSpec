@@ -4,8 +4,6 @@ A talent helper for OctoWoW that makes importing, viewing, and applying talent b
 
 OctoSpec lets you import talent calculator strings, highlights the next talent you should take, prioritizes what to spend points on, and can auto-apply talents for you when you level up or when you ask it to.
 
-![OctoSpec](Screenshots/OctoSpecScreen.png)
-
 ### Features
 
 * Import builds from the talent calculator
@@ -41,6 +39,9 @@ You can also build a custom priority list by opening the Priority List window an
 |`/os reset`|Clear target build and priority|
 |`/os export`|Export current talents|
 |`/os help`|Show help|
+
+![OctoSpec](Screenshots/OctoSpecScreen.png)
+
 
 ### Installation
 
