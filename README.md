@@ -4,7 +4,7 @@ A talent helper for OctoWoW that makes importing, viewing, and applying talent b
 
 OctoSpec lets you import talent calculator strings, highlights the next talent you should take, prioritizes what to spend points on, and can auto-apply talents for you when you level up or when you ask it to.
 
-!\[OctoSpec](Screenshots/OctoSpecScreen.png)
+![OctoSpec](Screenshots/OctoSpecScreen.png)
 
 ### Features
 
