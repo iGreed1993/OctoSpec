@@ -27,6 +27,8 @@ local function InitDB()
             end
         end
     end
+    if not OctoSpecDB.builds then OctoSpecDB.builds = {} end
+    if not OctoSpecDB.deletedDefaults then OctoSpecDB.deletedDefaults = {} end
 end
 
 local function OnLoad()
@@ -36,7 +38,7 @@ local function OnLoad()
     OctoSpec._restoredThisSession = false
     OctoSpec._restoreDone = false
     OctoSpec._restoreFrame = nil
-    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec|r v" .. (OctoSpec.version or "1.0.0") .. " loaded. Type /os for help.")
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec|r v" .. (OctoSpec.version or "1.1.0") .. " loaded. Type /os for help.")
 end
 
 local function OnEvent()
@@ -45,6 +47,9 @@ local function OnEvent()
     elseif event == "PLAYER_ENTERING_WORLD" then
         if not OctoSpec._restoredThisSession then
             OctoSpec._restoredThisSession = true
+            if OctoSpec.SeedDefaultBuilds then
+                OctoSpec.SeedDefaultBuilds()
+            end
             if OctoSpec.RestoreCharacterBuild then
                 OctoSpec.RestoreCharacterBuild()
             end
@@ -131,6 +136,7 @@ SlashCmdList["OCTOSPEC"] = function(msg)
         DEFAULT_CHAT_FRAME:AddMessage("  /os primary 1-3      - set primary tree (0 = none)")
         DEFAULT_CHAT_FRAME:AddMessage("  /os reset            - clear target build and priority")
         DEFAULT_CHAT_FRAME:AddMessage("  /os export           - export current talents")
+        DEFAULT_CHAT_FRAME:AddMessage("  /os redef            - restore deleted default builds for this character")
         DEFAULT_CHAT_FRAME:AddMessage("  /os help             - this help")
     elseif msg == "next" then
         if OctoSpec.ApplyNextTalent then OctoSpec.ApplyNextTalent() end
@@ -180,6 +186,10 @@ SlashCmdList["OCTOSPEC"] = function(msg)
             OctoSpec.CopyToClipboard(url)
         end
         DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec:|r Current talents exported.")
+    elseif msg == "redef" or msg == "restoredefaults" or msg == "restore defaults" then
+        if OctoSpec.RestoreDefaultBuilds then
+            OctoSpec.RestoreDefaultBuilds()
+        end
     else
         DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec:|r Unknown command. Type /os help")
     end
@@ -189,6 +199,87 @@ end
 
 
 
+
+
+function OctoSpec.IsClassDefaultBuild(name)
+    if not name or not OctoSpecDefaultBuilds then return false end
+    local class = UnitClass("player")
+    if not class or not OctoSpecDefaultBuilds[class] then return false end
+    return OctoSpecDefaultBuilds[class][name] ~= nil
+end
+
+function OctoSpec.SeedDefaultBuilds()
+    if not OctoSpecDB or not OctoSpecDefaultBuilds then return 0 end
+    local class = UnitClass("player")
+    if not class or not OctoSpecDefaultBuilds[class] then return 0 end
+
+    if not OctoSpecDB.builds then OctoSpecDB.builds = {} end
+    if not OctoSpecDB.deletedDefaults then OctoSpecDB.deletedDefaults = {} end
+    local key = OctoSpec.CharKey()
+    if not OctoSpecDB.deletedDefaults[key] then
+        OctoSpecDB.deletedDefaults[key] = {}
+    end
+    local deleted = OctoSpecDB.deletedDefaults[key]
+
+    local added = 0
+    for name, data in pairs(OctoSpecDefaultBuilds[class]) do
+        local points = data and data.points
+        if points and points ~= "" and not deleted[name] and not OctoSpecDB.builds[name] then
+            OctoSpecDB.builds[name] = {
+                points = points,
+                primaryTree = data.primaryTree or 0,
+                priority = {},
+                class = class,
+                isDefault = true,
+            }
+            added = added + 1
+        end
+    end
+    return added
+end
+
+function OctoSpec.RestoreDefaultBuilds()
+    if not OctoSpecDB then
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000OctoSpec:|r Database not ready.")
+        return
+    end
+    if not OctoSpecDefaultBuilds then
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000OctoSpec:|r No default builds table loaded.")
+        return
+    end
+    local class = UnitClass("player")
+    if not class or not OctoSpecDefaultBuilds[class] then
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000OctoSpec:|r No defaults defined for " .. tostring(class) .. ".")
+        return
+    end
+
+    if not OctoSpecDB.builds then OctoSpecDB.builds = {} end
+    if not OctoSpecDB.deletedDefaults then OctoSpecDB.deletedDefaults = {} end
+    local key = OctoSpec.CharKey()
+    OctoSpecDB.deletedDefaults[key] = {}
+
+    local restored = 0
+    local skipped = 0
+    for name, data in pairs(OctoSpecDefaultBuilds[class]) do
+        local points = data and data.points
+        if points and points ~= "" then
+            OctoSpecDB.builds[name] = {
+                points = points,
+                primaryTree = data.primaryTree or 0,
+                priority = {},
+                class = class,
+                isDefault = true,
+            }
+            restored = restored + 1
+        else
+            skipped = skipped + 1
+        end
+    end
+
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec:|r Restored " .. restored .. " default build(s) for " .. class .. "."
+        .. (skipped > 0 and (" (" .. skipped .. " still empty in DefaultBuilds.lua)") or ""))
+    if OctoSpec.RefreshUI then OctoSpec.RefreshUI() end
+end
 
 function OctoSpec.RememberActiveBuild(buildName)
     if not OctoSpecDB then return end
@@ -556,7 +647,14 @@ function OctoSpec.SaveBuild(name)
         primaryTree = OctoSpec.primaryTree or 0,
         priority = OctoSpec.priorityList or {},
         class = UnitClass("player"),
+        isDefault = false,
     }
+    if OctoSpecDB.deletedDefaults then
+        local key = OctoSpec.CharKey()
+        if OctoSpecDB.deletedDefaults[key] then
+            OctoSpecDB.deletedDefaults[key][name] = nil
+        end
+    end
     if OctoSpec.RememberActiveBuild then OctoSpec.RememberActiveBuild(name) end
     DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec:|r Saved build \"" .. name .. "\".")
     if OctoSpec.mainFrame and OctoSpec.mainFrame.saveNameBox then
@@ -649,14 +747,34 @@ function OctoSpec.DeleteBuild(name)
         DEFAULT_CHAT_FRAME:AddMessage("|cffff0000OctoSpec:|r Build not found.")
         return
     end
+
+    local wasDefault = false
+    if OctoSpecDB.builds[name].isDefault then
+        wasDefault = true
+    elseif OctoSpec.IsClassDefaultBuild and OctoSpec.IsClassDefaultBuild(name) then
+        wasDefault = true
+    end
+
     OctoSpecDB.builds[name] = nil
+
+    if wasDefault then
+        if not OctoSpecDB.deletedDefaults then OctoSpecDB.deletedDefaults = {} end
+        local key = OctoSpec.CharKey()
+        if not OctoSpecDB.deletedDefaults[key] then
+            OctoSpecDB.deletedDefaults[key] = {}
+        end
+        OctoSpecDB.deletedDefaults[key][name] = true
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec:|r Deleted default \"" .. name .. "\" for this character. Use /os redef to restore defaults.")
+    else
+        DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec:|r Deleted build \"" .. name .. "\".")
+    end
+
     if OctoSpec.currentBuildName == name then
         OctoSpec.currentBuildName = nil
     end
     if OctoSpec.suspendedBuildName == name then
         OctoSpec.suspendedBuildName = nil
     end
-    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec:|r Deleted build \"" .. name .. "\".")
     if OctoSpec.mainFrame and OctoSpec.mainFrame.saveNameBox then
         OctoSpec.mainFrame.saveNameBox:SetText("")
         OctoSpec.mainFrame.saveNameBox:ClearFocus()
@@ -665,18 +783,29 @@ function OctoSpec.DeleteBuild(name)
 end
 
 function OctoSpec.GetSavedBuildNames()
-    local names = { "Priority Only" }  -- always first: built-in switch to priority-only mode
-    if OctoSpecDB.builds then
-        local extra = {}
-        for name in pairs(OctoSpecDB.builds) do
-            if name ~= "Priority Only" then
-                table.insert(extra, name)
+    local names = { "Priority Only" }
+    if not OctoSpecDB or not OctoSpecDB.builds then
+        return names
+    end
+
+    local defaults = {}
+    local custom = {}
+    for name, data in pairs(OctoSpecDB.builds) do
+        if name ~= "Priority Only" then
+            if data and data.isDefault then
+                table.insert(defaults, name)
+            else
+                table.insert(custom, name)
             end
         end
-        table.sort(extra)
-        for _, name in ipairs(extra) do
-            table.insert(names, name)
-        end
+    end
+    table.sort(defaults)
+    table.sort(custom)
+    for _, name in ipairs(defaults) do
+        table.insert(names, name)
+    end
+    for _, name in ipairs(custom) do
+        table.insert(names, name)
     end
     return names
 end

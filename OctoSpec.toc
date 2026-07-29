@@ -2,10 +2,11 @@
 ## Title: OctoSpec by |cffffd700iGreed|r
 ## Notes: Import OctoWoW talent calculator links, smart prioritization, highlighting and auto-apply
 ## Author: iGreed
-## Version: 1.0.0
+## Version: 1.1.0
 ## SavedVariables: OctoSpecDB
 
 Defaults.lua
+DefaultBuilds.lua
 Encode.lua
 TalentLogic.lua
 OctoSpec.lua
