@@ -393,24 +393,25 @@ function OctoSpec.RestoreCharacterBuild()
         if state.buildName then
             local charBuilds = OctoSpec.GetCharBuilds()
             local data = charBuilds and charBuilds[state.buildName]
-        if data then
-            local points = data.points or ""
-            OctoSpec.targetPointsString = points
-            local ranks = OctoSpec.BitUnpack(points)
-            OctoSpec.targetRanks = OctoSpec.RanksToMap(ranks)
-            OctoSpec.primaryTree = data.primaryTree or state.primaryTree or 0
-            if OctoSpecDB then OctoSpecDB.primaryTree = OctoSpec.primaryTree end
-            OctoSpec.priorityList = {}
-            local src = data.priority or state.priority or {}
-            for i, pr in ipairs(src) do
-                OctoSpec.priorityList[i] = { tab = pr.tab, index = pr.index }
+            if data then
+                local points = data.points or ""
+                OctoSpec.targetPointsString = points
+                local ranks = OctoSpec.BitUnpack(points)
+                OctoSpec.targetRanks = OctoSpec.RanksToMap(ranks)
+                OctoSpec.primaryTree = data.primaryTree or state.primaryTree or 0
+                if OctoSpecDB then OctoSpecDB.primaryTree = OctoSpec.primaryTree end
+                OctoSpec.priorityList = {}
+                local src = data.priority or state.priority or {}
+                for i, pr in ipairs(src) do
+                    OctoSpec.priorityList[i] = { tab = pr.tab, index = pr.index }
+                end
+                OctoSpec.currentBuildName = state.buildName
+                DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec:|r Loaded build: |cffffd700" .. state.buildName .. "|r")
+                if OctoSpec.RefreshUI then OctoSpec.RefreshUI() end
+                if OctoSpec.UpdateHighlight then OctoSpec.UpdateHighlight() end
+                OctoSpec._pendingTalentHighlight = true
+                return true
             end
-            OctoSpec.currentBuildName = state.buildName
-            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00OctoSpec:|r Loaded build: |cffffd700" .. state.buildName .. "|r")
-            if OctoSpec.RefreshUI then OctoSpec.RefreshUI() end
-            if OctoSpec.UpdateHighlight then OctoSpec.UpdateHighlight() end
-            OctoSpec._pendingTalentHighlight = true
-            return true
         end
 
         -- Fall back: raw points + priority from charState
