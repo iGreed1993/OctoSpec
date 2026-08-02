@@ -756,7 +756,7 @@ function OctoSpec.LoadBuild(name)
 
     local builds = OctoSpec.GetCharBuilds()
     if not builds or not builds[name] then
-        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000OctoSpec:|r Build "" .. tostring(name) .. "" not found on this character.")
+        DEFAULT_CHAT_FRAME:AddMessage('|cffff0000OctoSpec:|r Build "' .. tostring(name) .. '" not found on this character.')
         return
     end
     local data = builds[name]
@@ -801,7 +801,7 @@ function OctoSpec.DeleteBuild(name)
     end
     local builds = OctoSpec.GetCharBuilds()
     if not builds or not builds[name] then
-        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000OctoSpec:|r Build not found on this character.")
+        DEFAULT_CHAT_FRAME:AddMessage('|cffff0000OctoSpec:|r Build "' .. tostring(name) .. '" not found on this character.')
         return
     end
 
